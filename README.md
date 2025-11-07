@@ -1,64 +1,66 @@
-# 双目视觉点云处理系统 - 项目架构设计文档
+# 双目视觉点云处理系统
 
 ## 项目概述
 
-本项目实现一个双目视觉系统的点云数据处理系统，能够读取PLY格式的点云数据，使用SIFT算法提取特征点，并进行交互式可视化展示。
+本项目实现了一个完整的双目视觉系统点云数据处理平台，能够读取PLY格式的点云数据，执行数据预处理，使用SIFT算法提取特征点，并通过Matplotlib提供交互式3D可视化展示。系统模拟左右两个摄像头采集的圆柱体点云数据，支持特征点提取、数据保存和可视化分析功能。
 
 ## 系统需求
 
 ### 功能需求
 - 读取两个PLY格式的点云数据文件（模拟双目摄像头）
+- 对点云数据进行验证和坐标归一化处理
 - 使用SIFT算法提取点云特征点
-- 保存提取的特征点数据
-- 提供交互式3D可视化界面
-- 支持特征点高亮显示
+- 保存提取的特征点数据为NumPy格式
+- 提供交互式3D可视化界面，支持视角控制
+- 支持特征点高亮显示和多视图对比
 
 ### 技术需求
 - 点云规模：约10,000个点
-- 特征提取算法：SIFT
-- 可视化：交互式3D显示
-- 数据保存：NumPy格式
+- 特征提取算法：OpenCV SIFT
+- 可视化：基于Matplotlib的3D交互式显示
+- 数据格式：PLY (输入), NumPy .npy (特征点输出)
+- 支持中文显示
 
 ## 系统架构
 
 ### 整体架构图
 
 ```
-双目摄像头 → PLY数据 → 点云读取 → 预处理 → SIFT特征提取 → 可视化
+数据生成 → PLY文件 → 点云读取 → 预处理 → SIFT特征提取 → 可视化展示
                                     ↓
-                                数据保存
+                                特征保存
 ```
 
 ### 模块划分
 
-1. **数据输入层** (data/)
-   - left_camera.ply: 左摄像头点云数据
-   - right_camera.ply: 右摄像头点云数据
+1. **数据输入与生成层** (data/)
+   - generate_sample_data.py: 圆柱体点云生成工具
+   - left_camera.ply: 左摄像头圆柱体点云数据
+   - right_camera.ply: 右摄像头圆柱体点云数据
 
 2. **核心处理层** (src/)
-   - cloud_io.py: 点云数据读取模块
-   - preprocessing.py: 数据预处理模块
+   - cloud_io.py: 点云数据读取与保存模块
+   - preprocessing.py: 数据验证和预处理模块
    - feature_extraction.py: SIFT特征点提取模块
-   - visualization.py: 3D可视化模块
-   - main.py: 主程序控制
+   - visualization.py: 基于Matplotlib的3D可视化模块
+   - main.py: 主程序和流程控制
 
 3. **输出层** (output/)
-   - features_left.npy: 左图特征点数据
-   - features_right.npy: 右图特征点数据
-   - visualization.html: 可视化结果
+   - features_left.npy: 左摄像头特征点数据
+   - features_right.npy: 右摄像头特征点数据
 
 ## 技术栈
 
 ### 核心依赖库
 - **OpenCV**: SIFT特征点提取算法
 - **NumPy**: 数值计算和数组操作
-- **Open3D**: 3D点云处理和可视化
 - **PLYFile**: PLY格式文件读写
-- **Matplotlib**: 辅助可视化
+- **Matplotlib**: 3D点云可视化和图形展示
 
 ### 开发环境
 - Python 3.8+
 - 操作系统：跨平台支持
+- 字体配置：支持中文显示（Arial Unicode MS、WenQuanYi Micro Hei等）
 
 ## 模块详细设计
 
@@ -68,8 +70,9 @@
 - 读取PLY格式点云文件
 - 解析XYZ坐标和RGB颜色数据
 - 返回NumPy数组格式
+- 支持将点云数据保存为PLY文件
 
-**接口设计**:
+**主要接口**:
 ```python
 def load_ply_file(filepath: str) -> Tuple[np.ndarray, np.ndarray]:
     """加载PLY文件并返回坐标和颜色数据"""
@@ -119,21 +122,21 @@ def load_features(filepath: str) -> Tuple[np.ndarray, np.ndarray]:
 ### 4. 交互式可视化模块 (visualization.py)
 
 **功能描述**:
-- 3D点云渲染
+- 基于Matplotlib的3D点云渲染
 - 特征点高亮显示
-- 相机视角控制
-- 交互式操作
+- 相机视角交互式控制（旋转、缩放、平移）
+- 多视图对比显示
+- 中文显示支持
 
-**接口设计**:
+**主要接口**:
 ```python
-def visualize_pointcloud(points: np.ndarray, colors: np.ndarray, title: str = "Point Cloud"):
-    """可视化点云数据"""
+def visualize_pointcloud(points: np.ndarray, colors: np.ndarray, title: str = "点云", keypoints: np.ndarray = None):
+    """可视化点云数据，可选高亮显示特征点"""
     
-def highlight_keypoints(points: np.ndarray, keypoints: np.ndarray, colors: np.ndarray, keypoint_color: tuple = (1, 0, 0)):
-    """高亮显示特征点"""
-    
-def create_interactive_viewer(points: np.ndarray, colors: np.ndarray, keypoints: np.ndarray = None):
-    """创建交互式查看器"""
+def compare_pointclouds(left_points: np.ndarray, right_points: np.ndarray, 
+                           left_colors: np.ndarray, right_colors: np.ndarray, 
+                           title: str = "点云对比"):
+    """对比显示左右摄像头点云"""
 ```
 
 ### 5. 主程序 (main.py)
@@ -231,28 +234,35 @@ def create_interactive_viewer(points: np.ndarray, colors: np.ndarray, keypoints:
 
 ### 依赖安装
 ```bash
-pip install opencv-python numpy open3d plyfile matplotlib
+pip install opencv-python numpy plyfile matplotlib
 ```
 
 ### 运行方式
+
+#### 1. 生成圆柱体点云数据
 ```bash
-python main.py --left data/left_camera.ply --right data/right_camera.ply --output output/
+cd data
+python generate_sample_data.py
+```
+
+#### 2. 运行主程序
+```bash
+cd src
+python main.py --visualize true
 ```
 
 ### 配置参数
-- --left: 左摄像头PLY文件路径
-- --right: 右摄像头PLY文件路径
-- --output: 输出目录路径
-- --visualize: 是否启用可视化（默认True）
-- --save_features: 是否保存特征点（默认True）
+- --left: 左摄像头PLY文件路径（默认: ../data/left_camera.ply）
+- --right: 右摄像头PLY文件路径（默认: ../data/right_camera.ply）
+- --output: 输出目录路径（默认: ../output/）
+- --visualize: 是否启用可视化（默认: True）
+- --save_features: 是否保存特征点（默认: True）
 
 ## 文档和维护
 
 ### 文档结构
-- README.md: 项目介绍和使用说明
-- API.md: API接口文档
-- TUTORIAL.md: 使用教程
-- CHANGELOG.md: 版本更新记录
+- README.md: 项目介绍和使用说明（当前文档）
+- 项目内模块文档: 各Python文件包含详细的函数文档字符串
 
 ### 代码规范
 - PEP 8代码风格
@@ -260,6 +270,25 @@ python main.py --left data/left_camera.ply --right data/right_camera.ply --outpu
 - 完整的docstring
 - Git提交规范
 
+## 项目特点
+
+- **模块化设计**：清晰的功能分离，便于扩展和维护
+- **中文支持**：所有可视化界面和输出支持中文显示
+- **交互式体验**：提供直观的3D交互操作
+- **特征提取**：使用SIFT算法提取稳定的点云特征点
+- **样例数据生成**：内置圆柱体点云生成工具，方便测试
+
+## 运行结果示例
+
+执行主程序后，系统会：
+1. 加载左右摄像头的圆柱体点云数据
+2. 进行数据预处理和坐标归一化
+3. 提取SIFT特征点（通常可提取600-700个特征点）
+4. 保存特征点数据到output目录
+5. 显示三个交互式视图：左摄像头点云、右摄像头点云、双目点云对比
+
+用户可通过鼠标交互来旋转、缩放和平移视图，以便从不同角度观察点云数据。
+
 ---
 
-*本架构设计文档为双目视觉点云处理系统提供了完整的技术方案和实现指导。*
+*本项目提供了一个完整的双目视觉点云处理解决方案，适用于点云特征提取和可视化分析应用场景。*
